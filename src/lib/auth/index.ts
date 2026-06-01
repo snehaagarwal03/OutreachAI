@@ -20,6 +20,20 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // update session every 1 day
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // cache session for 5 minutes
+    },
+  },
+  advanced: {
+    cookiePrefix: "hyperreach",
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+  },
 })
 
 export type AuthSession = typeof auth.$Infer.Session

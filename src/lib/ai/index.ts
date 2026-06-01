@@ -1,10 +1,7 @@
-import OpenAI from "openai"
 import { env } from "@/lib/utils/env"
 
-const client = new OpenAI({
-  apiKey: env.OPENCODE_GO_API_KEY,
-  baseURL: "https://api.opencode.ai/v1",
-})
+const OPENCODE_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+const DEFAULT_MODEL = "opencode-go/kimi-k2.6"
 
 export async function generateCompletion(
   systemPrompt: string,
@@ -20,34 +17,56 @@ export async function generateCompletion(
   model?: string
   error?: string
 }> {
+  const apiKey = env.OPENCODE_GO_API_KEY
+  const model = options.model || DEFAULT_MODEL
+
+  console.log("AI Call:", { url: OPENCODE_URL, model })
+
   try {
-    const response = await client.chat.completions.create({
-      model: options.model || "gpt-4o",
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens ?? 2000,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+    const response = await fetch(OPENCODE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens ?? 2000,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
     })
 
-    if (!response || !response.choices || !Array.isArray(response.choices)) {
-      console.error("Unexpected API response:", JSON.stringify(response, null, 2))
+    const responseText = await response.text()
+    console.log("AI Status:", response.status, "Body:", responseText.substring(0, 400))
+
+    if (!response.ok) {
       return {
         success: false,
-        error: "Invalid API response format",
+        error: `API error ${response.status}: ${responseText.substring(0, 200)}`,
       }
     }
 
-    const firstChoice = response.choices[0]
-    if (!firstChoice || !firstChoice.message) {
+    const data = JSON.parse(responseText)
+
+    if (data.error) {
       return {
         success: false,
-        error: "No message in API response",
+        error: data.error.message || data.error,
       }
     }
 
-    const content = firstChoice.message.content
+    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      return {
+        success: false,
+        error: "No choices in API response",
+      }
+    }
+
+    const content = data.choices[0]?.message?.content
 
     if (!content) {
       return {
@@ -59,13 +78,13 @@ export async function generateCompletion(
     return {
       success: true,
       content,
-      model: response.model || options.model || "gpt-4o",
+      model: data.model || model,
     }
   } catch (error) {
     console.error("AI generation error:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred during AI generation",
+      error: error instanceof Error ? error.message : "Unknown error during AI generation",
     }
   }
 }
