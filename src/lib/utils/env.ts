@@ -9,13 +9,22 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
   CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
   CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
+  NEXT_PUBLIC_BETTER_AUTH_URL: z.string().min(1, "NEXT_PUBLIC_BETTER_AUTH_URL is required").default("http://localhost:3000"),
 })
 
-const parsedEnv = envSchema.safeParse(process.env)
+const isServer = typeof window === "undefined"
 
-if (!parsedEnv.success) {
-  console.error("❌ Invalid environment variables:", parsedEnv.error.format())
-  throw new Error("Invalid environment variables. Application cannot start.")
+let env: z.infer<typeof envSchema>
+
+if (isServer) {
+  const parsedEnv = envSchema.safeParse(process.env)
+  if (!parsedEnv.success) {
+    console.error("Invalid environment variables:", parsedEnv.error.format())
+    throw new Error("Invalid environment variables. Application cannot start.")
+  }
+  env = parsedEnv.data
+} else {
+  env = {} as z.infer<typeof envSchema>
 }
 
-export const env = parsedEnv.data
+export { env }

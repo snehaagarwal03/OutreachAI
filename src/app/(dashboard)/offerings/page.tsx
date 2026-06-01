@@ -1,47 +1,73 @@
-import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
 import Link from "next/link"
+import { getOfferings, deleteOffering } from "@/features/offerings/actions"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default async function OfferingsPage() {
-  const session = await auth.api.getSession({
-    headers: await import("next/headers").then((m) => m.headers()),
-  })
-
-  if (!session) {
-    redirect("/login")
-  }
+  const offeringsList = await getOfferings()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Offerings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Offerings</h1>
           <p className="text-muted-foreground mt-1">
-            Define what you sell and who you sell it to.
+            Manage your products and services
           </p>
         </div>
         <Link href="/offerings/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Offering
-          </Button>
+          <Button>Create Offering</Button>
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>No offerings yet</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Create your first offering to start generating personalized outreach messages.
-            You can paste a website URL, type it out manually, or do both.
-          </p>
-        </CardContent>
-      </Card>
+      {offeringsList.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No offerings yet</p>
+            <Link href="/offerings/new" className="mt-4 inline-block">
+              <Button variant="outline">Create your first offering</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {offeringsList.map((offering) => (
+            <Card key={offering.id}>
+              <CardHeader>
+                <CardTitle className="text-lg">{offering.name}</CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {offering.description || "No description"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Link href={`/offerings/${offering.id}/edit`}>
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
+                  </Link>
+                  <form
+                    action={async () => {
+                      "use server"
+                      await deleteOffering(offering.id)
+                    }}
+                  >
+                    <Button variant="destructive" size="sm" type="submit">
+                      Delete
+                    </Button>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,28 +1,23 @@
-import { pgTable, uuid, text, timestamp, boolean, index } from "drizzle-orm/pg-core"
+import { relations } from "drizzle-orm"
+import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core"
 
-export const users = pgTable(
-  "users",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: text("name"),
-    email: text("email").notNull().unique(),
-    emailVerified: boolean("email_verified").default(false).notNull(),
-    image: text("image"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    index("users_email_idx").on(table.email),
-  ]
-)
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
 
-export const sessions = pgTable(
-  "sessions",
+export const session = pgTable(
+  "session",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    id: text("id").primaryKey(),
+    userId: text("user_id")
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     token: text("token").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     ipAddress: text("ip_address"),
@@ -31,18 +26,18 @@ export const sessions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    index("sessions_user_id_idx").on(table.userId),
-    index("sessions_token_idx").on(table.token),
+    index("session_user_id_idx").on(table.userId),
+    index("session_token_idx").on(table.token),
   ]
 )
 
-export const accounts = pgTable(
-  "accounts",
+export const account = pgTable(
+  "account",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    id: text("id").primaryKey(),
+    userId: text("user_id")
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
@@ -56,15 +51,15 @@ export const accounts = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    index("accounts_user_id_idx").on(table.userId),
-    index("accounts_provider_id_account_id_idx").on(table.providerId, table.accountId),
+    index("account_user_id_idx").on(table.userId),
+    index("account_provider_id_account_id_idx").on(table.providerId, table.accountId),
   ]
 )
 
-export const verifications = pgTable(
-  "verifications",
+export const verification = pgTable(
+  "verification",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -72,6 +67,19 @@ export const verifications = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
-    index("verifications_identifier_idx").on(table.identifier),
+    index("verification_identifier_idx").on(table.identifier),
   ]
 )
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}))
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}))
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}))

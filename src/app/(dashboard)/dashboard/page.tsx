@@ -1,21 +1,19 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth/session"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, FileText, Users, MessageSquare } from "lucide-react"
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({
-    headers: await import("next/headers").then((m) => m.headers()),
-  })
+  const user = await getCurrentUser()
 
-  if (!session) {
+  if (!user) {
     redirect("/login")
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Welcome back, {session.user.name || "there"}</h1>
+        <h1 className="text-3xl font-bold">Welcome back, {user.name || "there"}</h1>
         <p className="text-muted-foreground mt-1">
           Manage your personalized outreach from one place.
         </p>
