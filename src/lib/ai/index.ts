@@ -3,16 +3,7 @@ import { env } from "@/lib/utils/env"
 const OPENCODE_URL = "https://opencode.ai/zen/go/v1/chat/completions"
 
 const MODEL_VARIANTS = [
-  "glm-5.1",
-  "glm-5",
-  "kimi-k2.6",
-  "kimi-k2.5",
-  "deepseek-v4-pro",
-  "deepseek-v4-flash",
-  "qwen3.7-max",
-  "qwen3.6-plus",
   "mimo-v2.5",
-  "mimo-v2-pro",
 ]
 
 export async function generateCompletion(
