@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic"
 
 import Link from "next/link"
-import { getOfferings, deleteOffering } from "@/features/offerings/actions"
+import { getOfferings } from "@/features/offerings/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Package, Plus, ArrowRight, Globe, Trash2 } from "lucide-react"
+import { Package, Plus, ArrowRight, Globe } from "lucide-react"
+import { DeleteOfferingButton } from "./_components/delete-button"
 
 export default async function OfferingsPage() {
   const offeringsList = await getOfferings()
@@ -68,11 +69,7 @@ export default async function OfferingsPage() {
                         <Badge variant="outline" className="text-xs">Draft</Badge>
                       )}
                     </div>
-                    <form action={async () => { "use server"; await deleteOffering(offering.id) }}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" type="submit" onClick={(e) => e.stopPropagation()}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </form>
+                    <DeleteOfferingButton id={offering.id} />
                   </div>
                 </CardContent>
               </Card>

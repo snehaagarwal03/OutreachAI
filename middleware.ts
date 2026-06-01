@@ -15,6 +15,7 @@ export function middleware(request: NextRequest) {
   }
 
   const sessionToken =
+    request.cookies.get("hyperreach.session_token")?.value ||
     request.cookies.get("better-auth.session_token")?.value ||
     request.cookies.get("authjs.session-token")?.value
 
