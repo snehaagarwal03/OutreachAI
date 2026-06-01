@@ -1,7 +1,19 @@
 import { env } from "@/lib/utils/env"
 
 const OPENCODE_URL = "https://opencode.ai/zen/go/v1/chat/completions"
-const DEFAULT_MODEL = "opencode-go/kimi-k2.6"
+
+const MODEL_VARIANTS = [
+  "glm-5.1",
+  "glm-5",
+  "kimi-k2.6",
+  "kimi-k2.5",
+  "deepseek-v4-pro",
+  "deepseek-v4-flash",
+  "qwen3.7-max",
+  "qwen3.6-plus",
+  "mimo-v2.5",
+  "mimo-v2-pro",
+]
 
 export async function generateCompletion(
   systemPrompt: string,
@@ -18,74 +30,61 @@ export async function generateCompletion(
   error?: string
 }> {
   const apiKey = env.OPENCODE_GO_API_KEY
-  const model = options.model || DEFAULT_MODEL
+  const modelsToTry = options.model ? [options.model] : MODEL_VARIANTS
 
-  console.log("AI Call:", { url: OPENCODE_URL, model })
+  for (const model of modelsToTry) {
+    console.log(`Trying model: ${model}`)
 
-  try {
-    const response = await fetch(OPENCODE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 2000,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    })
+    try {
+      const response = await fetch(OPENCODE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.maxTokens ?? 2000,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      })
 
-    const responseText = await response.text()
-    console.log("AI Status:", response.status, "Body:", responseText.substring(0, 400))
+      const responseText = await response.text()
+      console.log(`Status ${response.status}:`, responseText.substring(0, 300))
 
-    if (!response.ok) {
-      return {
-        success: false,
-        error: `API error ${response.status}: ${responseText.substring(0, 200)}`,
+      if (!response.ok) {
+        console.log(`Model ${model} failed with HTTP ${response.status}`)
+        continue
       }
-    }
 
-    const data = JSON.parse(responseText)
+      const data = JSON.parse(responseText)
 
-    if (data.error) {
-      return {
-        success: false,
-        error: data.error.message || data.error,
+      if (data.error) {
+        console.log(`Model ${model} returned error:`, data.error.message || data.error)
+        continue
       }
-    }
 
-    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      return {
-        success: false,
-        error: "No choices in API response",
+      const content = data.choices?.[0]?.message?.content
+      if (content) {
+        console.log(`Success with model: ${model}`)
+        return {
+          success: true,
+          content,
+          model: data.model || model,
+        }
       }
+    } catch (error) {
+      console.log(`Error with ${model}:`, error instanceof Error ? error.message : error)
     }
+  }
 
-    const content = data.choices[0]?.message?.content
-
-    if (!content) {
-      return {
-        success: false,
-        error: "Empty content in API response",
-      }
-    }
-
-    return {
-      success: true,
-      content,
-      model: data.model || model,
-    }
-  } catch (error) {
-    console.error("AI generation error:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error during AI generation",
-    }
+  return {
+    success: false,
+    error: "All models failed. Please check your OpenCode Go plan.",
   }
 }
 
