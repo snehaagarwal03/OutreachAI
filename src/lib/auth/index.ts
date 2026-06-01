@@ -1,5 +1,17 @@
-/**
- * Authentication utilities
- *
- * This module will contain Better Auth configuration and helpers.
- */
+import { betterAuth } from "better-auth"
+import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { db } from "@/db"
+import { env } from "@/lib/utils/env"
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+  }),
+  secret: env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
+  emailAndPassword: {
+    enabled: true,
+  },
+})
+
+export type AuthSession = typeof auth.$Infer.Session
