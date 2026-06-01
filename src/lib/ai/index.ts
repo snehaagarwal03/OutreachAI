@@ -61,16 +61,23 @@ export async function summarizeContent(
   } = {}
 ): Promise<{
   success: boolean
+  content?: string
   summary?: string
+  model?: string
   error?: string
 }> {
   const systemPrompt = `You are a helpful assistant that summarizes content concisely. Summarize the following content in at most ${options.maxLength || 500} words. Focus on key value propositions, features, and differentiators.`
 
-  return generateCompletion(systemPrompt, content, {
+  const result = await generateCompletion(systemPrompt, content, {
     model: options.model,
     temperature: 0.5,
     maxTokens: 1000,
   })
+
+  return {
+    ...result,
+    summary: result.content,
+  }
 }
 
 export async function buildOutreachMessage(

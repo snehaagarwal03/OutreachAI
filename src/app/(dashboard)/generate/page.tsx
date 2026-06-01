@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getOfferings } from "@/features/offerings/actions"
 import { getPrompts } from "@/features/prompts/actions"
 import { getProspects } from "@/features/prospects/actions"

@@ -1,10 +1,11 @@
 import { pgTable, uuid, text, timestamp, index, boolean } from "drizzle-orm/pg-core"
+import { user } from "./auth"
 
 export const offerings = pgTable(
   "offerings",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
     rawContent: text("raw_content"),

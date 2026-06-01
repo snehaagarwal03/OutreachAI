@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, boolean, index } from "drizzle-orm/pg-core"
+import { user } from "./auth"
 import { offerings } from "./offerings"
 import { prompts } from "./prompts"
 import { prospects } from "./prospects"
@@ -8,7 +9,7 @@ export const messages = pgTable(
   "messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
     prospectId: uuid("prospect_id")
       .notNull()
       .references(() => prospects.id, { onDelete: "cascade" }),

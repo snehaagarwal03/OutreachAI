@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import Link from "next/link"
 import { getPrompts, deletePrompt, setDefaultPrompt } from "@/features/prompts/actions"
 import { Button } from "@/components/ui/button"

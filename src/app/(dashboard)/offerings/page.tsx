@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import Link from "next/link"
 import { getOfferings, deleteOffering } from "@/features/offerings/actions"
 import { Button } from "@/components/ui/button"
