@@ -31,24 +31,41 @@ export async function generateCompletion(
       ],
     })
 
-    const content = response.choices[0]?.message?.content
+    if (!response || !response.choices || !Array.isArray(response.choices)) {
+      console.error("Unexpected API response:", JSON.stringify(response, null, 2))
+      return {
+        success: false,
+        error: "Invalid API response format",
+      }
+    }
+
+    const firstChoice = response.choices[0]
+    if (!firstChoice || !firstChoice.message) {
+      return {
+        success: false,
+        error: "No message in API response",
+      }
+    }
+
+    const content = firstChoice.message.content
 
     if (!content) {
       return {
         success: false,
-        error: "No content generated",
+        error: "Empty content in API response",
       }
     }
 
     return {
       success: true,
       content,
-      model: response.model,
+      model: response.model || options.model || "gpt-4o",
     }
   } catch (error) {
+    console.error("AI generation error:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: error instanceof Error ? error.message : "Unknown error occurred during AI generation",
     }
   }
 }

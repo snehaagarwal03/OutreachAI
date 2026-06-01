@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { redirect } from "next/navigation"
 import { createPrompt } from "@/features/prompts/actions"
 import { Button } from "@/components/ui/button"

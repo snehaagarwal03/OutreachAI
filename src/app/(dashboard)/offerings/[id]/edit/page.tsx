@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { notFound, redirect } from "next/navigation"
 import { getOfferingById, updateOffering } from "@/features/offerings/actions"
 import { Button } from "@/components/ui/button"

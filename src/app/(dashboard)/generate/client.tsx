@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { generateMessage, rateMessage, toggleFavorite } from "@/features/messages/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Sparkles, ThumbsUp, ThumbsDown, Star, Copy, RefreshCw, Trash2 } from "lucide-react"
+import { Sparkles, ThumbsUp, ThumbsDown, Star, Copy, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 type Offering = { id: string; name: string; description: string | null; aiSummary: string | null; manualContent: string | null }
@@ -24,53 +24,51 @@ export default function GeneratePageClient({
   const [selectedOffering, setSelectedOffering] = useState("")
   const [selectedPrompt, setSelectedPrompt] = useState("")
   const [selectedProspect, setSelectedProspect] = useState("")
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const [generatedMessage, setGeneratedMessage] = useState<{ id: string; content: string } | null>(null)
   const [error, setError] = useState("")
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!selectedOffering || !selectedPrompt || !selectedProspect) return
     setError("")
     setGeneratedMessage(null)
+    setIsPending(true)
 
-    startTransition(async () => {
-      try {
-        const result = await generateMessage({
-          offeringId: selectedOffering,
-          promptId: selectedPrompt,
-          prospectId: selectedProspect,
-        })
-        setGeneratedMessage({ id: result.id, content: result.content })
-        toast.success("Message generated!")
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to generate message")
-        toast.error("Failed to generate message")
-      }
-    })
+    try {
+      const result = await generateMessage({
+        offeringId: selectedOffering,
+        promptId: selectedPrompt,
+        prospectId: selectedProspect,
+      })
+      setGeneratedMessage({ id: result.id, content: result.content })
+      toast.success("Message generated!")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate message"
+      setError(message)
+      toast.error(message)
+    } finally {
+      setIsPending(false)
+    }
   }
 
-  function handleRate(rating: "liked" | "disliked" | "none") {
+  async function handleRate(rating: "liked" | "disliked" | "none") {
     if (!generatedMessage) return
-    startTransition(async () => {
-      try {
-        await rateMessage(generatedMessage.id, rating)
-        toast.success(rating === "liked" ? "Marked as liked" : rating === "disliked" ? "Marked as disliked" : "Rating removed")
-      } catch {
-        toast.error("Failed to rate message")
-      }
-    })
+    try {
+      await rateMessage(generatedMessage.id, rating)
+      toast.success(rating === "liked" ? "Marked as liked" : rating === "disliked" ? "Marked as disliked" : "Rating removed")
+    } catch {
+      toast.error("Failed to rate message")
+    }
   }
 
-  function handleFavorite() {
+  async function handleFavorite() {
     if (!generatedMessage) return
-    startTransition(async () => {
-      try {
-        await toggleFavorite(generatedMessage.id)
-        toast.success("Toggled favorite")
-      } catch {
-        toast.error("Failed to toggle favorite")
-      }
-    })
+    try {
+      await toggleFavorite(generatedMessage.id)
+      toast.success("Toggled favorite")
+    } catch {
+      toast.error("Failed to toggle favorite")
+    }
   }
 
   async function handleCopy() {
