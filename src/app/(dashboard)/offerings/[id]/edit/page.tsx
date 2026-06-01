@@ -1,135 +1,92 @@
 export const dynamic = "force-dynamic"
 
 import { notFound, redirect } from "next/navigation"
-import { getOfferingById, updateOffering } from "@/features/offerings/actions"
+import { getOfferingById, updateOffering, scrapeOfferingUrl } from "@/features/offerings/actions"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
-export default async function EditOfferingPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditOfferingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const offering = await getOfferingById(id)
-
-  if (!offering) {
-    notFound()
-  }
-
-  async function handleSubmit(formData: FormData) {
-    "use server"
-    const name = formData.get("name") as string
-    const description = formData.get("description") as string
-    const url = formData.get("url") as string
-    const rawContent = formData.get("rawContent") as string
-    const aiSummary = formData.get("aiSummary") as string
-    const manualContent = formData.get("manualContent") as string
-
-    await updateOffering(id, {
-      name,
-      description,
-      url,
-      rawContent,
-      aiSummary,
-      manualContent,
-    })
-
-    redirect("/offerings")
-  }
+  if (!offering) notFound()
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-2xl">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Edit Offering</h1>
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Edit Offering</h1>
+        <p className="text-muted-foreground mt-1">Update your offering details.</p>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Offering Details</CardTitle>
-          <CardDescription>Edit your offering information</CardDescription>
+          <CardTitle className="text-base">Offering Details</CardTitle>
+          <CardDescription className="text-xs">Edit what users will see and how the AI understands your offering.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Name</label>
-              <input
-                name="name"
-                defaultValue={offering.name}
-                required
-                className="w-full px-3 py-2 border rounded-md"
-              />
+          <form action={async (formData: FormData) => {
+            "use server"
+            const name = formData.get("name") as string
+            const description = formData.get("description") as string
+            const url = formData.get("url") as string
+            const manualContent = formData.get("manualContent") as string
+
+            let aiSummary = offering.aiSummary || ""
+            let rawContent = offering.rawContent || ""
+
+            const refreshAI = formData.get("refreshAI") === "true"
+            if (refreshAI && url) {
+              const result = await scrapeOfferingUrl(url)
+              if (result.success) {
+                aiSummary = result.aiSummary || ""
+                rawContent = result.rawContent || ""
+              }
+            }
+
+            await updateOffering(id, {
+              name,
+              description,
+              url,
+              manualContent,
+              aiSummary,
+              rawContent,
+            })
+            redirect("/offerings")
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input id="name" name="name" defaultValue={offering.name} required />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Description
-              </label>
-              <textarea
-                name="description"
-                defaultValue={offering.description || ""}
-                rows={3}
-                className="w-full px-3 py-2 border rounded-md"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" name="description" rows={3} defaultValue={offering.description || ""} />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">URL</label>
-              <input
-                name="url"
-                type="url"
-                defaultValue={offering.url || ""}
-                className="w-full px-3 py-2 border rounded-md"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="url">Website URL</Label>
+              <Input id="url" name="url" type="url" defaultValue={offering.url || ""} placeholder="https://example.com" />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Raw Content
-              </label>
-              <textarea
-                name="rawContent"
-                defaultValue={offering.rawContent || ""}
-                rows={6}
-                className="w-full px-3 py-2 border rounded-md font-mono text-sm"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="manualContent">Additional Context</Label>
+              <Textarea id="manualContent" name="manualContent" rows={4} defaultValue={offering.manualContent || ""} placeholder="Any extra details the AI should know..." />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                AI Summary
-              </label>
-              <textarea
-                name="aiSummary"
-                defaultValue={offering.aiSummary || ""}
-                rows={4}
-                className="w-full px-3 py-2 border rounded-md"
-                readOnly
-              />
-            </div>
+            {offering.aiSummary && (
+              <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Current AI Understanding</p>
+                <p className="text-sm text-muted-foreground line-clamp-3">{offering.aiSummary}</p>
+              </div>
+            )}
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Manual Content
-              </label>
-              <textarea
-                name="manualContent"
-                defaultValue={offering.manualContent || ""}
-                rows={4}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button type="submit">Update Offering</Button>
+            <div className="flex gap-2 pt-4 flex-wrap">
+              <Button type="submit">Save Changes</Button>
+              <Button type="submit" name="refreshAI" value="true" variant="outline">Refresh AI Analysis</Button>
               <a href="/offerings">
-                <Button variant="outline" type="button">
-                  Cancel
-                </Button>
+                <Button variant="ghost" type="button">Cancel</Button>
               </a>
             </div>
           </form>
